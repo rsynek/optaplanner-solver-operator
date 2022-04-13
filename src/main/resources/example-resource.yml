@@ -1,0 +1,8 @@
+apiVersion: org.optaplanner.solver/v1
+kind: Solver
+metadata:
+  name: school-timetabling
+spec:
+  kafkaCluster: my-cluster
+  kafkaBootstrapServers: localhost:9092
+  solverImage: some image
