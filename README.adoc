@@ -1,0 +1,29 @@
+= OptaPlanner solver operator
+
+The OptaPlanner solver operator enables running OptaPlanner workloads on Kubernetes.
+
+== Installation
+
+=== Prerequisites
+
+Log in to an existing OpenShift cluster or use either https://developers.redhat.com/products/codeready-containers/overview[RedHat CodeReady Containers] or https://minikube.sigs.k8s.io/docs/start/[Minikube] for a local development.
+
+=== Install Strimzi
+
+The OptaPlanner solver operator depends on Strimzi for creating Kafka topics.
+
+Install Strimzi by following their https://strimzi.io/quickstarts/[quickstart].
+
+=== Apply the custom resource definition (CRD)
+
+. Create a new namespace by running `kubectl create namespace <namespace>`
+. Run `mvn clean package`.
+. Apply the generated CRD by running `kubectl apply -f target/kubernetes/solvers.org.optaplanner.solver-v1.yml -n <namespace>`.
+
+=== Run the solver operator locally
+
+Run `mvn quarkus:dev` to start the solver operator locally. The operator will connect to the Kubernetes cluster you are logged in.
+
+=== Create a solver custom resource
+
+Create a solver resource that follows the generated CRD. There is an example you can use by running `kubectl apply -f src/k8s/example-resource.yml -n <namespace>`.
