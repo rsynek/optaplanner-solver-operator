@@ -5,14 +5,13 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.optaplanner.k8s.operator.solver.model.ConfigMapDependentResource;
 import org.optaplanner.k8s.operator.solver.model.DeploymentDependentResource;
 import org.optaplanner.k8s.operator.solver.model.Solver;
 import org.optaplanner.k8s.operator.solver.model.SolverStatus;
+import org.optaplanner.k8s.operator.solver.model.messaging.KafkaTopicDependentResource;
 import org.optaplanner.k8s.operator.solver.model.messaging.MessagingAddress;
-import org.optaplanner.k8s.operator.solver.model.messaging.MessagingAddressDependentResource;
-import org.optaplanner.k8s.operator.solver.model.messaging.kafka.KafkaTopicDependentResource;
 
-import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
@@ -28,24 +27,27 @@ import io.strimzi.api.kafka.model.KafkaTopic;
 @ControllerConfiguration
 public class SolverReconciler implements Reconciler<Solver>, ErrorStatusHandler<Solver>, EventSourceInitializer<Solver> {
 
-    private KubernetesClient k8s;
+    private KubernetesClient kubernetesClient;
 
     private final DeploymentDependentResource deploymentDependentResource;
-    private final MessagingAddressDependentResource<KafkaTopic> inputKafkaTopicDependentResource;
-    private final MessagingAddressDependentResource<KafkaTopic> outputKafkaTopicDependentResource;
+    private final KafkaTopicDependentResource inputKafkaTopicDependentResource;
+    private final KafkaTopicDependentResource outputKafkaTopicDependentResource;
+    private final ConfigMapDependentResource configMapDependentResource;
 
     @Inject
-    public SolverReconciler(KubernetesClient k8s) {
-        deploymentDependentResource = new DeploymentDependentResource(k8s);
-        inputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.INPUT, k8s);
-        outputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.OUTPUT, k8s);
+    public SolverReconciler(KubernetesClient kubernetesClient) {
+        deploymentDependentResource = new DeploymentDependentResource(kubernetesClient);
+        inputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.INPUT, kubernetesClient);
+        outputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.OUTPUT, kubernetesClient);
+        configMapDependentResource = new ConfigMapDependentResource(kubernetesClient);
     }
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Solver> context) {
         return EventSourceInitializer.nameEventSources(deploymentDependentResource.initEventSource(context),
                 inputKafkaTopicDependentResource.initEventSource(context),
-                outputKafkaTopicDependentResource.initEventSource(context));
+                outputKafkaTopicDependentResource.initEventSource(context),
+                configMapDependentResource.initEventSource(context));
     }
 
     @Override
@@ -53,22 +55,18 @@ public class SolverReconciler implements Reconciler<Solver>, ErrorStatusHandler<
         deploymentDependentResource.reconcile(solver, context);
         inputKafkaTopicDependentResource.reconcile(solver, context);
         outputKafkaTopicDependentResource.reconcile(solver, context);
+        configMapDependentResource.reconcile(solver, context);
 
         Optional<KafkaTopic> inputKafkaTopic = inputKafkaTopicDependentResource.getSecondaryResource(solver);
         Optional<KafkaTopic> outputKafkaTopic = outputKafkaTopicDependentResource.getSecondaryResource(solver);
 
-        Optional<Deployment> deployment = deploymentDependentResource.getSecondaryResource(solver);
-        if (deployment.isPresent()) {
-            System.out.println(deployment);
-        }
-
         SolverStatus solverStatus = SolverStatus.success();
         solver.setStatus(solverStatus);
         if (inputKafkaTopic.isPresent()) {
-            solverStatus.setInputMessagingAddress(inputKafkaTopic.get().getStatus().getTopicName());
+            solverStatus.setInputMessagingAddress(inputKafkaTopic.get().getSpec().getTopicName());
         }
         if (outputKafkaTopic.isPresent()) {
-            solverStatus.setOutputMessagingAddress(outputKafkaTopic.get().getStatus().getTopicName());
+            solverStatus.setOutputMessagingAddress(outputKafkaTopic.get().getSpec().getTopicName());
         }
         return UpdateControl.updateStatus(solver);
     }
