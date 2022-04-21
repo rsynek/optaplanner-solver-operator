@@ -10,7 +10,7 @@ import org.optaplanner.k8s.operator.solver.model.DeploymentDependentResource;
 import org.optaplanner.k8s.operator.solver.model.Solver;
 import org.optaplanner.k8s.operator.solver.model.SolverStatus;
 import org.optaplanner.k8s.operator.solver.model.messaging.KafkaTopicDependentResource;
-import org.optaplanner.k8s.operator.solver.model.messaging.MessagingAddress;
+import org.optaplanner.k8s.operator.solver.model.messaging.MessageAddress;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -37,8 +37,8 @@ public class SolverReconciler implements Reconciler<Solver>, ErrorStatusHandler<
     @Inject
     public SolverReconciler(KubernetesClient kubernetesClient) {
         deploymentDependentResource = new DeploymentDependentResource(kubernetesClient);
-        inputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.INPUT, kubernetesClient);
-        outputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessagingAddress.OUTPUT, kubernetesClient);
+        inputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessageAddress.INPUT, kubernetesClient);
+        outputKafkaTopicDependentResource = new KafkaTopicDependentResource(MessageAddress.OUTPUT, kubernetesClient);
         configMapDependentResource = new ConfigMapDependentResource(kubernetesClient);
     }
 
@@ -55,7 +55,6 @@ public class SolverReconciler implements Reconciler<Solver>, ErrorStatusHandler<
         deploymentDependentResource.reconcile(solver, context);
         inputKafkaTopicDependentResource.reconcile(solver, context);
         outputKafkaTopicDependentResource.reconcile(solver, context);
-        configMapDependentResource.reconcile(solver, context);
 
         Optional<KafkaTopic> inputKafkaTopic = inputKafkaTopicDependentResource.getSecondaryResource(solver);
         Optional<KafkaTopic> outputKafkaTopic = outputKafkaTopicDependentResource.getSecondaryResource(solver);
@@ -63,10 +62,14 @@ public class SolverReconciler implements Reconciler<Solver>, ErrorStatusHandler<
         SolverStatus solverStatus = SolverStatus.success();
         solver.setStatus(solverStatus);
         if (inputKafkaTopic.isPresent()) {
-            solverStatus.setInputMessagingAddress(inputKafkaTopic.get().getSpec().getTopicName());
+            solverStatus.setInputMessageAddress(inputKafkaTopic.get().getSpec().getTopicName());
         }
         if (outputKafkaTopic.isPresent()) {
-            solverStatus.setOutputMessagingAddress(outputKafkaTopic.get().getSpec().getTopicName());
+            solverStatus.setOutputMessageAddress(outputKafkaTopic.get().getSpec().getTopicName());
+        }
+
+        if (inputKafkaTopic.isPresent() && outputKafkaTopic.isPresent()) {
+            configMapDependentResource.reconcile(solver, context);
         }
         return UpdateControl.updateStatus(solver);
     }

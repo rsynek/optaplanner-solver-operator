@@ -19,21 +19,21 @@ public final class KafkaTopicDependentResource extends CRUKubernetesDependentRes
 
     private static final String STRIMZI_LABEL = "strimzi.io/cluster";
 
-    private final MessagingAddress messagingAddress;
+    private final MessageAddress messageAddress;
 
-    public KafkaTopicDependentResource(MessagingAddress messagingAddress, KubernetesClient kubernetesClient) {
+    public KafkaTopicDependentResource(MessageAddress messageAddress, KubernetesClient kubernetesClient) {
         super(KafkaTopic.class);
-        this.messagingAddress = messagingAddress;
+        this.messageAddress = messageAddress;
         setKubernetesClient(kubernetesClient);
     }
 
     @Override
     protected KafkaTopic desired(Solver solver, Context<Solver> context) {
-        final String topicName = getTopicName(solver.getMetadata().getName());
+        final String topicName = solver.getMessageAddressName(messageAddress);
         return new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(topicName)
-                .withNamespace(solver.getMetadata().getNamespace())
+                .withNamespace(solver.getNamespace())
                 .withLabels(Map.of(STRIMZI_LABEL, solver.getSpec().getKafkaCluster()))
                 .endMetadata()
                 .withNewSpec()
@@ -46,14 +46,6 @@ public final class KafkaTopicDependentResource extends CRUKubernetesDependentRes
 
     @Override
     public ResourceID toSecondaryResourceID(Solver solver) {
-        return new ResourceID(getTopicName(solver.getMetadata().getName()), solver.getMetadata().getNamespace());
-    }
-
-    private String getTopicName(String solverName) {
-        return solverName + "-" + getMessagingAddress().getName();
-    }
-
-    public MessagingAddress getMessagingAddress() {
-        return messagingAddress;
+        return new ResourceID(solver.getMessageAddressName(messageAddress), solver.getNamespace());
     }
 }

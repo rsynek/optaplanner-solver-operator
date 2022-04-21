@@ -13,6 +13,10 @@ import java.util.Map;
 @KubernetesDependent
 public class ConfigMapDependentResource extends CRUKubernetesDependentResource<ConfigMap, Solver> {
 
+    public static final String SOLVER_MESSAGE_INPUT_KEY = "solver.message.input";
+    public static final String SOLVER_MESSAGE_OUTPUT_KEY = "solver.message.output";
+    public static final String SOLVER_KAFKA_BOOTSTRAP_SERVERS_KEY = "solver.kafka.bootstrap.servers";
+
     public ConfigMapDependentResource(KubernetesClient kubernetesClient) {
         super(ConfigMap.class);
         setKubernetesClient(kubernetesClient);
@@ -21,13 +25,17 @@ public class ConfigMapDependentResource extends CRUKubernetesDependentResource<C
     @Override
     protected ConfigMap desired(Solver solver, Context<Solver> context) {
         Map<String, String> data = new HashMap<>();
-        data.put("solver.message.input", solver.getStatus().getInputMessagingAddress());
-        data.put("solver.message.output", solver.getStatus().getOutputMessagingAddress());
-        data.put("solver.kafka.bootstrap.servers", solver.getSpec().getKafkaBootstrapServers());
+        // TODO: find a better way to pass the messa
+        if (solver.getStatus() != null) {
+            data.put(SOLVER_MESSAGE_INPUT_KEY, solver.getStatus().getInputMessageAddress());
+            data.put(SOLVER_MESSAGE_OUTPUT_KEY, solver.getStatus().getOutputMessageAddress());
+        }
+        data.put(SOLVER_KAFKA_BOOTSTRAP_SERVERS_KEY, solver.getSpec().getKafkaBootstrapServers());
+
         return new ConfigMapBuilder()
                 .withNewMetadata()
-                .withName(solver.getMetadata().getName())
-                .withNamespace(solver.getMetadata().getNamespace())
+                .withName(solver.getConfigMapName())
+                .withNamespace(solver.getNamespace())
                 .endMetadata()
                 .withData(data)
                 .build();

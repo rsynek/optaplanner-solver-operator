@@ -1,9 +1,12 @@
 package org.optaplanner.k8s.operator.solver.model;
 
+import java.util.List;
 import java.util.Map;
 
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -21,15 +24,17 @@ public final class DeploymentDependentResource extends CRUKubernetesDependentRes
 
     @Override
     protected Deployment desired(Solver solver, Context<Solver> context) {
-        String deploymentName = getDeploymentName(solver);
+        String deploymentName = solver.getDeploymentName();
+
         Container container = new ContainerBuilder()
                 .withName(deploymentName)
                 .withImage(solver.getSpec().getSolverImage())
+                .withEnv(buildEnvironmentVariablesMapping(solver.getConfigMapName()))
                 .build();
         return new DeploymentBuilder()
                 .withNewMetadata()
                 .withName(deploymentName)
-                .withNamespace(getDeploymentNamespace(solver))
+                .withNamespace(solver.getNamespace())
                 .endMetadata()
                 .withNewSpec()
                 .withNewSelector().withMatchLabels(Map.of("app", deploymentName))
@@ -45,11 +50,27 @@ public final class DeploymentDependentResource extends CRUKubernetesDependentRes
                 .build();
     }
 
-    private String getDeploymentName(Solver solver) {
-        return solver.getMetadata().getName();
-    }
+    private List<EnvVar> buildEnvironmentVariablesMapping(String configMapName) {
+        EnvVar envVarMessageInput = new EnvVarBuilder()
+                .withName("SOLVER_MESSAGE_INPUT")
+                .withNewValueFrom()
+                .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_MESSAGE_INPUT_KEY, configMapName, false)
+                .endValueFrom()
+                .build();
 
-    private String getDeploymentNamespace(Solver solver) {
-        return solver.getMetadata().getNamespace();
+        EnvVar envVarMessageOutput = new EnvVarBuilder()
+                .withName("SOLVER_MESSAGE_OUTPUT")
+                .withNewValueFrom()
+                .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_MESSAGE_OUTPUT_KEY, configMapName, false)
+                .endValueFrom()
+                .build();
+
+        EnvVar envVarKafkaServers = new EnvVarBuilder()
+                .withName("SOLVER_KAFKA_BOOTSTRAP_SERVERS")
+                .withNewValueFrom()
+                .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_KAFKA_BOOTSTRAP_SERVERS_KEY, configMapName, false)
+                .endValueFrom()
+                .build();
+        return List.of(envVarMessageInput, envVarMessageOutput, envVarKafkaServers);
     }
 }

@@ -2,8 +2,8 @@ package org.optaplanner.k8s.operator.solver.model;
 
 public class SolverStatus {
     private String errorMessage;
-    private String inputMessagingAddress;
-    private String outputMessagingAddress;
+    private String inputMessageAddress;
+    private String outputMessageAddress;
 
     public SolverStatus() {
         // required by Jackson
@@ -29,19 +29,19 @@ public class SolverStatus {
         this.errorMessage = errorMessage;
     }
 
-    public String getInputMessagingAddress() {
-        return inputMessagingAddress;
+    public String getInputMessageAddress() {
+        return inputMessageAddress;
     }
 
-    public void setInputMessagingAddress(String inputMessagingAddress) {
-        this.inputMessagingAddress = inputMessagingAddress;
+    public void setInputMessageAddress(String inputMessageAddress) {
+        this.inputMessageAddress = inputMessageAddress;
     }
 
-    public String getOutputMessagingAddress() {
-        return outputMessagingAddress;
+    public String getOutputMessageAddress() {
+        return outputMessageAddress;
     }
 
-    public void setOutputMessagingAddress(String outputMessagingAddress) {
-        this.outputMessagingAddress = outputMessagingAddress;
+    public void setOutputMessageAddress(String outputMessageAddress) {
+        this.outputMessageAddress = outputMessageAddress;
     }
 }
