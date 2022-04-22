@@ -17,6 +17,10 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @KubernetesDependent
 public final class DeploymentDependentResource extends CRUKubernetesDependentResource<Deployment, Solver> {
 
+    private static final String ENV_SOLVER_MESSAGE_IN = "SOLVER_MESSAGE_INPUT";
+    private static final String ENV_SOLVER_MESSAGE_OUT = "SOLVER_MESSAGE_OUTPUT";
+    private static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
+
     public DeploymentDependentResource(KubernetesClient k8s) {
         super(Deployment.class);
         setKubernetesClient(k8s);
@@ -39,7 +43,7 @@ public final class DeploymentDependentResource extends CRUKubernetesDependentRes
                 .withNewSpec()
                 .withNewSelector().withMatchLabels(Map.of("app", deploymentName))
                 .endSelector()
-                .withReplicas(1)
+                .withReplicas(solver.getSpec().getReplicas())
                 .withNewTemplate()
                 .withNewMetadata().withLabels(Map.of("app", deploymentName)).endMetadata()
                 .withNewSpec()
@@ -52,21 +56,21 @@ public final class DeploymentDependentResource extends CRUKubernetesDependentRes
 
     private List<EnvVar> buildEnvironmentVariablesMapping(String configMapName) {
         EnvVar envVarMessageInput = new EnvVarBuilder()
-                .withName("SOLVER_MESSAGE_INPUT")
+                .withName(ENV_SOLVER_MESSAGE_IN)
                 .withNewValueFrom()
                 .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_MESSAGE_INPUT_KEY, configMapName, false)
                 .endValueFrom()
                 .build();
 
         EnvVar envVarMessageOutput = new EnvVarBuilder()
-                .withName("SOLVER_MESSAGE_OUTPUT")
+                .withName(ENV_SOLVER_MESSAGE_OUT)
                 .withNewValueFrom()
                 .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_MESSAGE_OUTPUT_KEY, configMapName, false)
                 .endValueFrom()
                 .build();
 
         EnvVar envVarKafkaServers = new EnvVarBuilder()
-                .withName("SOLVER_KAFKA_BOOTSTRAP_SERVERS")
+                .withName(KAFKA_BOOTSTRAP_SERVERS)
                 .withNewValueFrom()
                 .withNewConfigMapKeyRef(ConfigMapDependentResource.SOLVER_KAFKA_BOOTSTRAP_SERVERS_KEY, configMapName, false)
                 .endValueFrom()

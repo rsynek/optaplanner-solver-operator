@@ -4,5 +4,6 @@ metadata:
   name: school-timetabling
 spec:
   kafkaCluster: my-cluster
-  kafkaBootstrapServers: localhost:9092
-  solverImage: some image
+  kafkaBootstrapServers: my-cluster-kafka-bootstrap.kafka.svc:9092
+  solverImage: rsynek/optaplanner-quarkus-school-timetabling-quickstart:1.0-SNAPSHOT
+  replicas: 1

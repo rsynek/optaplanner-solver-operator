@@ -5,6 +5,7 @@ public class SolverSpec {
     private String kafkaBootstrapServers;
     private String kafkaCluster;
 
+    private int replicas = 1;
     public SolverSpec() {
         // required by Jackson
     }
@@ -37,5 +38,13 @@ public class SolverSpec {
 
     public void setKafkaCluster(String kafkaCluster) {
         this.kafkaCluster = kafkaCluster;
+    }
+
+    public int getReplicas() {
+        return replicas;
+    }
+
+    public void setReplicas(int replicas) {
+        this.replicas = replicas;
     }
 }

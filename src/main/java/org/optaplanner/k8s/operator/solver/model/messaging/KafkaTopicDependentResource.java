@@ -39,7 +39,7 @@ public final class KafkaTopicDependentResource extends CRUKubernetesDependentRes
                 .withNewSpec()
                 .withTopicName(topicName)
                 .withReplicas(1)
-                .withPartitions(1)
+                .withPartitions(solver.getSpec().getReplicas())
                 .endSpec()
                 .build();
     }
