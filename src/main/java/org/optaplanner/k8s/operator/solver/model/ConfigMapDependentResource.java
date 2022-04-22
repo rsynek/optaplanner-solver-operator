@@ -25,7 +25,7 @@ public class ConfigMapDependentResource extends CRUKubernetesDependentResource<C
     @Override
     protected ConfigMap desired(Solver solver, Context<Solver> context) {
         Map<String, String> data = new HashMap<>();
-        // TODO: find a better way to pass the messa
+        // TODO: find a better way to pass the message address
         if (solver.getStatus() != null) {
             data.put(SOLVER_MESSAGE_INPUT_KEY, solver.getStatus().getInputMessageAddress());
             data.put(SOLVER_MESSAGE_OUTPUT_KEY, solver.getStatus().getOutputMessageAddress());
